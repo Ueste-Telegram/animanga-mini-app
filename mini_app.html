@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniManga Tracker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            border-radius: 16px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .header p {
+            color: var(--tg-theme-hint-color, #999999);
+            font-size: 14px;
+        }
+        
+        .manga-card {
+            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--tg-theme-section-bg-color, #e5e5e5);
+        }
+        
+        .manga-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .manga-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-reading { background: #10b981; color: white; }
+        .status-planned { background: #6366f1; color: white; }
+        .status-completed { background: #f59e0b; color: white; }
+        .status-dropped { background: #ef4444; color: white; }
+        
+        .rating {
+            color: #fbbf24;
+            font-size: 14px;
+        }
+        
+        .progress {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999999);
+            margin-top: 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #999999);
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            background: var(--tg-theme-bg-color, #ffffff);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--tg-theme-button-color, #2481cc);
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999999);
+        }
+        
+        .add-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎌 AniManga Tracker</h1>
+        <p>Твой трекер в Telegram</p>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('manga')">📚 Манга</div>
+        <div class="tab" onclick="showTab('stats')">📊 Статистика</div>
+    </div>
+    
+    <div id="manga-tab">
+        <div id="manga-list">
+            <!-- Список манги загрузится здесь -->
+        </div>
+    </div>
+    
+    <div id="stats-tab" style="display: none;">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="total-count">0</div>
+                <div class="stat-label">Всего</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="reading-count">0</div>
+                <div class="stat-label">Читаю</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="completed-count">0</div>
+                <div class="stat-label">Прочитано</div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="add-button" onclick="addManga()">+</button>
+
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        // Данные (в реальном приложении будут с сервера)
+        let mangaData = [];
+        
+        function showTab(tabName) {
+            document.getElementById('manga-tab').style.display = 'none';
+            document.getElementById('stats-tab').style.display = 'none';
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            event.target.classList.add('active');
+            
+            if (tabName === 'manga') {
+                loadMangaList();
+            } else if (tabName === 'stats') {
+                loadStats();
+            }
+        }
+        
+        function loadMangaList() {
+            // В реальном приложении здесь будет запрос к API
+            const mangaList = document.getElementById('manga-list');
+            
+            if (mangaData.length === 0) {
+                mangaList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📚 Список пуст</h3>
+                        <p>Добавь свою первую мангу!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            mangaList.innerHTML = mangaData.map(manga => {
+                const statusText = {
+                    'reading': 'Читаю',
+                    'planned': 'В планах',
+                    'completed': 'Прочитано',
+                    'dropped': 'Брошено'
+                }[manga.status] || 'В планах';
+                
+                const statusClass = `status-${manga.status}`;
+                
+                let progress = '';
+                if (manga.progress && (manga.progress.volumes > 0 || manga.progress.chapters > 0)) {
+                    progress = `<div class="progress">📚 Том ${manga.progress.volumes} • Глава ${manga.progress.chapters}</div>`;
+                }
+                
+                let rating = '';
+                if (manga.rating) {
+                    rating = `<span class="rating">${'⭐'.repeat(manga.rating)}</span>`;
+                }
+                
+                return `
+                    <div class="manga-card">
+                        <div class="manga-title">${manga.title}</div>
+                        <div class="manga-meta">
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                            ${rating}
+                        </div>
+                        ${progress}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function loadStats() {
+            const total = mangaData.length;
+            const reading = mangaData.filter(m => m.status === 'reading').length;
+            const completed = mangaData.filter(m => m.status === 'completed').length;
+            
+            document.getElementById('total-count').textContent = total;
+            document.getElementById('reading-count').textContent = reading;
+            document.getElementById('completed-count').textContent = completed;
+        }
+        
+        function addManga() {
+            tg.showPopup({
+                title: 'Добавить мангу',
+                message: 'Эта функция скоро появится! 🚀',
+                buttons: [{ type: 'ok' }]
+            });
+        }
+        
+        // Загрузка данных при старте
+        document.addEventListener('DOMContentLoaded', function() {
+            // Временные данные для демо
+            mangaData = [
+                {
+                    title: "Берсерк",
+                    status: "reading",
+                    rating: 5,
+                    progress: { volumes: 12, chapters: 347 }
+                },
+                {
+                    title: "Ван Пис", 
+                    status: "reading",
+                    rating: 4,
+                    progress: { volumes: 0, chapters: 108 }
+                }
+            ];
+            
+            loadMangaList();
+        });
+        
+        // Обработка данных от Telegram
+        tg.onEvent('viewportChanged', () => {
+            tg.expand();
+        });
+    </script>
+</body>
+</html>
