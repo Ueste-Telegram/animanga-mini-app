@@ -3,213 +3,569 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AniManga Tracker</title>
+    <title>AniManga Tracker Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        :root {
+            --primary: #6772e5;
+            --secondary: #24b47e;
+            --danger: #f0616d;
+            --warning: #ffc53d;
+            --bg-primary: var(--tg-theme-bg-color, #ffffff);
+            --bg-secondary: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            --text-primary: var(--tg-theme-text-color, #000000);
+            --text-secondary: var(--tg-theme-hint-color, #666666);
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
             padding: 16px;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             padding: 20px;
-            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            color: white;
+            margin: 16px;
+            margin-bottom: 24px;
         }
         
         .header h1 {
             font-size: 24px;
             margin-bottom: 8px;
-            color: var(--tg-theme-text-color, #000000);
+            font-weight: 700;
         }
         
         .header p {
-            color: var(--tg-theme-hint-color, #999999);
+            opacity: 0.9;
             font-size: 14px;
         }
         
-        .manga-card {
-            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+        .tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 6px;
+            margin: 0 16px 20px;
+            gap: 4px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px 8px;
+            text-align: center;
             border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            border: 1px solid var(--tg-theme-section-bg-color, #e5e5e5);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-weight: 600;
+        }
+        
+        .search-box {
+            margin: 0 16px 20px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 14px 45px 14px 16px;
+            border: none;
+            border-radius: 16px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 8px;
+            margin: 0 16px 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        
+        .filter-chip {
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .manga-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            padding: 0 16px;
+        }
+        
+        .manga-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .manga-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .manga-cover {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .manga-info {
+            padding: 12px;
         }
         
         .manga-title {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--tg-theme-text-color, #000000);
+            margin-bottom: 6px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         
         .manga-meta {
             display: flex;
             align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 6px;
         }
         
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
+        .manga-rating {
+            color: #ffd700;
             font-size: 12px;
-            font-weight: 500;
         }
         
-        .status-reading { background: #10b981; color: white; }
-        .status-planned { background: #6366f1; color: white; }
-        .status-completed { background: #f59e0b; color: white; }
-        .status-dropped { background: #ef4444; color: white; }
-        
-        .rating {
-            color: #fbbf24;
-            font-size: 14px;
+        .manga-status {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--primary);
+            color: white;
         }
         
-        .progress {
-            font-size: 12px;
-            color: var(--tg-theme-hint-color, #999999);
-            margin-top: 8px;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--tg-theme-hint-color, #999999);
-        }
-        
-        .empty-state h3 {
-            margin-bottom: 8px;
-            font-size: 18px;
-        }
-        
-        .tabs {
+        .manga-genres {
             display: flex;
-            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-            border-radius: 12px;
-            padding: 4px;
-            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
         }
         
-        .tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
+        .genre-tag {
+            font-size: 9px;
+            padding: 2px 6px;
+            background: rgba(103, 114, 229, 0.1);
+            color: var(--primary);
             border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
         }
         
-        .tab.active {
-            background: var(--tg-theme-bg-color, #ffffff);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--tg-theme-button-color, #2481cc);
-            margin-bottom: 4px;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            color: var(--tg-theme-hint-color, #999999);
-        }
-        
-        .add-button {
+        .add-fab {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 25px rgba(103, 114, 229, 0.3);
             cursor: pointer;
             border: none;
+            z-index: 1000;
+            transition: transform 0.2s;
+        }
+        
+        .add-fab:active {
+            transform: scale(0.95);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--bg-primary);
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--bg-secondary);
+            border-radius: 12px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: var(--primary);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        
+        .genre-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .genre-option {
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .genre-option.selected {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.5;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🎌 AniManga Tracker</h1>
-        <p>Твой трекер в Telegram</p>
-    </div>
-    
-    <div class="tabs">
-        <div class="tab active" onclick="showTab('manga')">📚 Манга</div>
-        <div class="tab" onclick="showTab('stats')">📊 Статистика</div>
-    </div>
-    
-    <div id="manga-tab">
-        <div id="manga-list">
-            <!-- Список манги загрузится здесь -->
+    <div class="container">
+        <div class="header">
+            <h1>🎌 AniManga Tracker Pro</h1>
+            <p>Твой продвинутый трекер аниме и манги</p>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('manga')">📚 Манга</div>
+            <div class="tab" onclick="showTab('anime')">🎬 Аниме</div>
+            <div class="tab" onclick="showTab('search')">🔍 Поиск</div>
+            <div class="tab" onclick="showTab('profile')">👤 Профиль</div>
+        </div>
+        
+        <!-- Вкладка Манга -->
+        <div id="manga-tab" class="tab-content">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Поиск манги..." oninput="searchManga(this.value)">
+                <div class="search-icon">🔍</div>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-chip active" onclick="setFilter('all')">Все</div>
+                <div class="filter-chip" onclick="setFilter('reading')">Читаю</div>
+                <div class="filter-chip" onclick="setFilter('planned')">В планах</div>
+                <div class="filter-chip" onclick="setFilter('completed')">Прочитано</div>
+                <div class="filter-chip" onclick="setFilter('dropped')">Брошено</div>
+            </div>
+            
+            <div id="manga-list" class="manga-grid">
+                <!-- Манга будет загружаться здесь -->
+            </div>
+        </div>
+        
+        <!-- Вкладка Аниме -->
+        <div id="anime-tab" class="tab-content" style="display: none;">
+            <div class="empty-state">
+                <div style="font-size: 48px;">🎬</div>
+                <h3>Раздел аниме</h3>
+                <p>Скоро появится! Работаем над этим 🚀</p>
+            </div>
+        </div>
+        
+        <!-- Вкладка Поиск -->
+        <div id="search-tab" class="tab-content" style="display: none;">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Поиск по базам..." oninput="searchDatabase(this.value)">
+                <div class="search-icon">🔍</div>
+            </div>
+            
+            <div id="search-results" class="manga-grid">
+                <!-- Результаты поиска -->
+            </div>
+        </div>
+        
+        <!-- Вкладка Профиль -->
+        <div id="profile-tab" class="tab-content" style="display: none;">
+            <div class="empty-state">
+                <div style="font-size: 48px;">📊</div>
+                <h3>Статистика</h3>
+                <p>Добавь мангу чтобы увидеть статистику!</p>
+            </div>
         </div>
     </div>
     
-    <div id="stats-tab" style="display: none;">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="total-count">0</div>
-                <div class="stat-label">Всего</div>
+    <!-- Кнопка добавления -->
+    <button class="add-fab" onclick="showAddModal()">+</button>
+    
+    <!-- Модальное окно добавления -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Добавить мангу</h2>
+                <button class="close-btn" onclick="hideAddModal()">×</button>
             </div>
-            <div class="stat-card">
-                <div class="stat-number" id="reading-count">0</div>
-                <div class="stat-label">Читаю</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="completed-count">0</div>
-                <div class="stat-label">Прочитано</div>
-            </div>
+            
+            <form onsubmit="addManga(event)">
+                <div class="form-group">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-input" id="manga-title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Статус</label>
+                    <select class="form-select" id="manga-status" required>
+                        <option value="reading">Читаю</option>
+                        <option value="planned">В планах</option>
+                        <option value="completed">Прочитано</option>
+                        <option value="dropped">Брошено</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Рейтинг</label>
+                    <select class="form-select" id="manga-rating">
+                        <option value="0">Без оценки</option>
+                        <option value="1">⭐</option>
+                        <option value="2">⭐⭐</option>
+                        <option value="3">⭐⭐⭐</option>
+                        <option value="4">⭐⭐⭐⭐</option>
+                        <option value="5">⭐⭐⭐⭐⭐</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Прогресс</label>
+                    <div style="display: flex; gap: 12px;">
+                        <input type="number" class="form-input" id="manga-volumes" placeholder="Тома" min="0">
+                        <input type="number" class="form-input" id="manga-chapters" placeholder="Главы" min="0">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Жанры</label>
+                    <div class="genre-selector" id="genre-selector">
+                        <div class="genre-option" onclick="toggleGenre(this)">Сёнэн</div>
+                        <div class="genre-option" onclick="toggleGenre(this)">Сёдзё</div>
+                        <div class="genre-option" onclick="toggleGenre(this)">Фэнтези</div>
+                        <div class="genre-option" onclick="toggleGenre(this)">Романтика</div>
+                        <div class="genre-option" onclick="toggleGenre(this)">Комедия</div>
+                        <div class="genre-option" onclick="toggleGenre(this)">Драма</div>
+                        <div class="genre-option" onclick="toggleGenre(this)">Экшен</div>
+                        <div class="genre-option" onclick="toggleGenre(this)">Приключения</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Теги (через запятую)</label>
+                    <input type="text" class="form-input" id="manga-tags" placeholder="например: классика, темное фэнтези">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-textarea" id="manga-description" placeholder="Краткое описание..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Добавить мангу</button>
+            </form>
         </div>
     </div>
-    
-    <button class="add-button" onclick="addManga()">+</button>
 
     <script>
-        // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
+        let currentUser = null;
+        let userManga = [];
+        let currentFilter = 'all';
+        
+        // Инициализация
         tg.expand();
         tg.enableClosingConfirmation();
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => tg.close());
         
-        // Данные (в реальном приложении будут с сервера)
-        let mangaData = [];
+        // Получение данных пользователя
+        function initUser() {
+            currentUser = tg.initDataUnsafe?.user?.id || 'demo_user';
+            loadUserData();
+        }
+        
+        function loadUserData() {
+            // В реальном приложении здесь будет запрос к API
+            // Сейчас используем демо-данные
+            userManga = [
+                {
+                    id: 1,
+                    title: "Берсерк",
+                    status: "reading",
+                    rating: 5,
+                    genres: ["Фэнтези", "Ужасы", "Драма"],
+                    tags: ["dark", "classic", "berserk"],
+                    progress: { volumes: 12, chapters: 347 },
+                    description: "Мрачная история о воине Гатсе и его борьбе с судьбой."
+                },
+                {
+                    id: 2,
+                    title: "Ван Пис",
+                    status: "reading", 
+                    rating: 4,
+                    genres: ["Сёнэн", "Комедия", "Приключения"],
+                    tags: ["pirate", "adventure", "long-running"],
+                    progress: { volumes: 0, chapters: 108 },
+                    description: "Приключения Луффи и его команды в поисках величайшего сокровища."
+                },
+                {
+                    id: 3,
+                    title: "Атака титанов",
+                    status: "completed",
+                    rating: 5,
+                    genres: ["Сёнэн", "Драма", "Экшен"],
+                    tags: ["titans", "post-apocalyptic", "epic"],
+                    progress: { volumes: 34, chapters: 0 },
+                    description: "Борьба человечества против гигантских титанов."
+                }
+            ];
+            renderMangaList();
+        }
         
         function showTab(tabName) {
-            document.getElementById('manga-tab').style.display = 'none';
-            document.getElementById('stats-tab').style.display = 'none';
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
             
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
@@ -219,101 +575,185 @@
             event.target.classList.add('active');
             
             if (tabName === 'manga') {
-                loadMangaList();
-            } else if (tabName === 'stats') {
-                loadStats();
+                renderMangaList();
             }
         }
         
-        function loadMangaList() {
-            // В реальном приложении здесь будет запрос к API
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderMangaList();
+        }
+        
+        function renderMangaList() {
             const mangaList = document.getElementById('manga-list');
+            let filteredManga = userManga;
             
-            if (mangaData.length === 0) {
+            if (currentFilter !== 'all') {
+                filteredManga = userManga.filter(manga => manga.status === currentFilter);
+            }
+            
+            if (filteredManga.length === 0) {
                 mangaList.innerHTML = `
-                    <div class="empty-state">
-                        <h3>📚 Список пуст</h3>
-                        <p>Добавь свою первую мангу!</p>
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div style="font-size: 48px;">📚</div>
+                        <h3>Список пуст</h3>
+                        <p>Нажми + чтобы добавить мангу</p>
                     </div>
                 `;
                 return;
             }
             
-            mangaList.innerHTML = mangaData.map(manga => {
+            mangaList.innerHTML = filteredManga.map(manga => {
                 const statusText = {
                     'reading': 'Читаю',
-                    'planned': 'В планах',
+                    'planned': 'В планах', 
                     'completed': 'Прочитано',
                     'dropped': 'Брошено'
-                }[manga.status] || 'В планах';
+                }[manga.status];
                 
                 const statusClass = `status-${manga.status}`;
                 
                 let progress = '';
                 if (manga.progress && (manga.progress.volumes > 0 || manga.progress.chapters > 0)) {
-                    progress = `<div class="progress">📚 Том ${manga.progress.volumes} • Глава ${manga.progress.chapters}</div>`;
+                    progress = `<div class="manga-meta">
+                        <span class="manga-rating">${'⭐'.repeat(manga.rating)}</span>
+                        <span class="manga-status">${statusText}</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">
+                        📚 Том ${manga.progress.volumes} • Глава ${manga.progress.chapters}
+                    </div>`;
                 }
                 
-                let rating = '';
-                if (manga.rating) {
-                    rating = `<span class="rating">${'⭐'.repeat(manga.rating)}</span>`;
-                }
+                const genresHTML = manga.genres.slice(0, 2).map(genre => 
+                    `<span class="genre-tag">${genre}</span>`
+                ).join('');
                 
                 return `
-                    <div class="manga-card">
-                        <div class="manga-title">${manga.title}</div>
-                        <div class="manga-meta">
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                            ${rating}
+                    <div class="manga-card" onclick="showMangaDetails(${manga.id})">
+                        <div style="background: #ddd; height: 120px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;">
+                            🖼️ Обложка
                         </div>
-                        ${progress}
+                        <div class="manga-info">
+                            <div class="manga-title">${manga.title}</div>
+                            ${progress}
+                            <div class="manga-genres">
+                                ${genresHTML}
+                                ${manga.genres.length > 2 ? `<span class="genre-tag">+${manga.genres.length - 2}</span>` : ''}
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
         
-        function loadStats() {
-            const total = mangaData.length;
-            const reading = mangaData.filter(m => m.status === 'reading').length;
-            const completed = mangaData.filter(m => m.status === 'completed').length;
-            
-            document.getElementById('total-count').textContent = total;
-            document.getElementById('reading-count').textContent = reading;
-            document.getElementById('completed-count').textContent = completed;
+        function showAddModal() {
+            document.getElementById('add-modal').style.display = 'block';
         }
         
-        function addManga() {
+        function hideAddModal() {
+            document.getElementById('add-modal').style.display = 'none';
+        }
+        
+        function toggleGenre(element) {
+            element.classList.toggle('selected');
+        }
+        
+        function addManga(event) {
+            event.preventDefault();
+            
+            const title = document.getElementById('manga-title').value;
+            const status = document.getElementById('manga-status').value;
+            const rating = parseInt(document.getElementById('manga-rating').value);
+            const volumes = parseInt(document.getElementById('manga-volumes').value) || 0;
+            const chapters = parseInt(document.getElementById('manga-chapters').value) || 0;
+            const tags = document.getElementById('manga-tags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+            const description = document.getElementById('manga-description').value;
+            
+            const selectedGenres = Array.from(document.querySelectorAll('.genre-option.selected'))
+                .map(el => el.textContent);
+            
+            const newManga = {
+                id: userManga.length + 1,
+                title,
+                status,
+                rating,
+                genres: selectedGenres,
+                tags,
+                progress: { volumes, chapters },
+                description
+            };
+            
+            userManga.push(newManga);
+            renderMangaList();
+            hideAddModal();
+            
+            // Сброс формы
+            event.target.reset();
+            document.querySelectorAll('.genre-option.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
             tg.showPopup({
-                title: 'Добавить мангу',
-                message: 'Эта функция скоро появится! 🚀',
+                title: 'Успешно!',
+                message: `Манга "${title}" добавлена в вашу библиотеку!`,
                 buttons: [{ type: 'ok' }]
             });
         }
         
-        // Загрузка данных при старте
-        document.addEventListener('DOMContentLoaded', function() {
-            // Временные данные для демо
-            mangaData = [
-                {
-                    title: "Берсерк",
-                    status: "reading",
-                    rating: 5,
-                    progress: { volumes: 12, chapters: 347 }
-                },
-                {
-                    title: "Ван Пис", 
-                    status: "reading",
-                    rating: 4,
-                    progress: { volumes: 0, chapters: 108 }
-                }
-            ];
+        function searchManga(query) {
+            // Простой поиск по названию
+            const filtered = userManga.filter(manga => 
+                manga.title.toLowerCase().includes(query.toLowerCase())
+            );
             
-            loadMangaList();
-        });
+            const mangaList = document.getElementById('manga-list');
+            if (filtered.length === 0) {
+                mangaList.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div style="font-size: 48px;">🔍</div>
+                        <h3>Ничего не найдено</h3>
+                        <p>Попробуйте изменить запрос</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Рендерим отфильтрованный список
+            mangaList.innerHTML = filtered.map(manga => {
+                // Тот же код рендеринга что и в renderMangaList
+                return `<div class="manga-card">
+                    <div style="background: #ddd; height: 120px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;">
+                        🖼️ Обложка
+                    </div>
+                    <div class="manga-info">
+                        <div class="manga-title">${manga.title}</div>
+                        <div class="manga-meta">
+                            <span class="manga-rating">${'⭐'.repeat(manga.rating)}</span>
+                            <span class="manga-status">${manga.status}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
         
-        // Обработка данных от Telegram
-        tg.onEvent('viewportChanged', () => {
-            tg.expand();
+        function showMangaDetails(mangaId) {
+            const manga = userManga.find(m => m.id === mangaId);
+            if (manga) {
+                tg.showPopup({
+                    title: manga.title,
+                    message: `Статус: ${manga.status}\nРейтинг: ${'⭐'.repeat(manga.rating)}\nЖанры: ${manga.genres.join(', ')}\n\n${manga.description}`,
+                    buttons: [{ type: 'ok' }]
+                });
+            }
+        }
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            initUser();
         });
     </script>
 </body>
