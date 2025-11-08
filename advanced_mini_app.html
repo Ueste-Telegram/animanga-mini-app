@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniManga Tracker Pro</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* === ОСНОВНЫЕ СТИЛИ === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        :root {
+            --primary: #6772e5;
+            --secondary: #24b47e;
+            --danger: #f0616d;
+            --warning: #ffc53d;
+            --bg-primary: var(--tg-theme-bg-color, #ffffff);
+            --bg-secondary: var(--tg-theme-secondary-bg-color, #f4f4f5);
+            --text-primary: var(--tg-theme-text-color, #000000);
+            --text-secondary: var(--tg-theme-hint-color, #666666);
+        }
+        
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        
+        /* === ШАПКА === */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            color: white;
+            margin: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        
+        /* === ВКЛАДКИ === */
+        .tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 6px;
+            margin: 0 16px 20px;
+            gap: 4px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px 8px;
+            text-align: center;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .tab.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 0 16px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* === КАРТОЧКИ АНИМЕ/МАНГИ === */
+        .entries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            padding: 0 16px;
+        }
+        
+        .entry-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .entry-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .entry-cover {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .entry-info {
+            padding: 12px;
+        }
+        
+        .entry-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .entry-status {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 10px;
+            color: white;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        
+        .status-watching { background: #10b981; }
+        .status-reading { background: #10b981; }
+        .status-completed { background: #f59e0b; }
+        .status-planned { background: #6366f1; }
+        .status-dropped { background: #ef4444; }
+        .status-rewatching { background: #8b5cf6; }
+        .status-rereading { background: #8b5cf6; }
+        .status-on_hold { background: #6b7280; }
+        
+        /* === КНОПКА ДОБАВЛЕНИЯ === */
+        .add-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 8px 25px rgba(103, 114, 229, 0.3);
+            cursor: pointer;
+            border: none;
+            z-index: 1000;
+        }
+        
+        /* === МОДАЛЬНЫЕ ОКНА === */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--bg-primary);
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--bg-secondary);
+            border-radius: 12px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+        
+        /* === СТАТИСТИКА === */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 0 16px;
+        }
+        
+        .stat-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* === ПУСТОЕ СОСТОЯНИЕ === */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ШАПКА -->
+        <div class="header">
+            <h1>🎌 AniManga Tracker Pro</h1>
+            <p>Твой продвинутый трекер аниме и манги</p>
+        </div>
+        
+        <!-- ВКЛАДКИ -->
+        <div class="tabs">
+            <div class="tab active" data-tab="anime">🎬 Аниме</div>
+            <div class="tab" data-tab="manga">📚 Манга</div>
+            <div class="tab" data-tab="stats">📊 Статистика</div>
+            <div class="tab" data-tab="profile">👤 Профиль</div>
+        </div>
+        
+        <!-- ВКЛАДКА АНИМЕ -->
+        <div id="anime-tab" class="tab-content active">
+            <div id="anime-list" class="entries-grid">
+                <!-- Аниме будет здесь -->
+            </div>
+        </div>
+        
+        <!-- ВКЛАДКА МАНГИ -->
+        <div id="manga-tab" class="tab-content">
+            <div id="manga-list" class="entries-grid">
+                <!-- Манга будет здесь -->
+            </div>
+        </div>
+        
+        <!-- ВКЛАДКА СТАТИСТИКИ -->
+        <div id="stats-tab" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-anime">0</div>
+                    <div class="stat-label">Аниме</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-manga">0</div>
+                    <div class="stat-label">Манга</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-time">0</div>
+                    <div class="stat-label">Часов просмотра</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-pages">0</div>
+                    <div class="stat-label">Страниц прочитано</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ВКЛАДКА ПРОФИЛЯ -->
+        <div id="profile-tab" class="tab-content">
+            <div class="empty-state">
+                <div style="font-size: 48px;">👤</div>
+                <h3>Профиль пользователя</h3>
+                <p>Раздел в разработке</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- КНОПКА ДОБАВЛЕНИЯ -->
+    <button class="add-fab" onclick="showAddModal()">+</button>
+    
+    <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 20px; font-weight: 700;">Добавить запись</h2>
+                <button onclick="hideAddModal()" style="background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer;">×</button>
+            </div>
+            
+            <form onsubmit="addEntry(event)">
+                <div class="form-group">
+                    <label class="form-label">Тип</label>
+                    <select class="form-select" id="entry-type" onchange="changeEntryType(this.value)">
+                        <option value="anime">Аниме</option>
+                        <option value="manga">Манга</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-input" id="entry-title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Статус</label>
+                    <select class="form-select" id="entry-status" required>
+                        <!-- Заполнится JavaScript -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Рейтинг</label>
+                    <select class="form-select" id="entry-rating">
+                        <option value="0">Без оценки</option>
+                        <option value="1">⭐ (1)</option>
+                        <option value="2">⭐⭐ (2)</option>
+                        <option value="3">⭐⭐⭐ (3)</option>
+                        <option value="4">⭐⭐⭐⭐ (4)</option>
+                        <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                    </select>
+                </div>
+                
+                <!-- ПОЛЯ ДЛЯ АНИМЕ -->
+                <div id="anime-fields">
+                    <div class="form-group">
+                        <label class="form-label">Эпизоды</label>
+                        <input type="number" class="form-input" id="anime-episodes" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Просмотрено эпизодов</label>
+                        <input type="number" class="form-input" id="anime-watched-episodes" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Длительность эпизода (минуты)</label>
+                        <input type="number" class="form-input" id="anime-duration" min="1" value="24">
+                    </div>
+                </div>
+                
+                <!-- ПОЛЯ ДЛЯ МАНГИ -->
+                <div id="manga-fields" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Главы</label>
+                        <input type="number" class="form-input" id="manga-chapters" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Прочитано глав</label>
+                        <input type="number" class="form-input" id="manga-read-chapters" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Тома</label>
+                        <input type="number" class="form-input" id="manga-volumes" min="0">
+                    </div>
+                </div>
+                
+                <button type="submit" class="form-input" style="background: var(--primary); color: white; border: none; cursor: pointer;">Добавить</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // === КОНФИГУРАЦИЯ СТАТУСОВ ===
+        const statusConfig = {
+            anime: {
+                'watching': '👀 Смотрю',
+                'completed': '✅ Просмотрено', 
+                'planned': '📋 В планах',
+                'dropped': '❌ Брошено',
+                'rewatching': '🔁 Пересматриваю',
+                'on_hold': '⏸️ На паузе'
+            },
+            manga: {
+                'reading': '📖 Читаю',
+                'completed': '✅ Прочитано',
+                'planned': '📋 В планах',
+                'dropped': '❌ Брошено',
+                'rereading': '🔁 Перечитываю',
+                'on_hold': '⏸️ На паузе'
+            }
+        };
+
+        // === ОСНОВНЫЕ ПЕРЕМЕННЫЕ ===
+        const tg = window.Telegram.WebApp;
+        let userData = { anime: [], manga: [] };
+
+        // === ИНИЦИАЛИЗАЦИЯ ===
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            setupTabs();
+            setupModal();
+        });
+
+        // === ЗАГРУЗКА ДАННЫХ ===
+        function loadUserData() {
+            // Демо-данные (позже заменим на реальные из базы)
+            userData = {
+                anime: [
+                    {
+                        id: '1',
+                        title: 'Человек-бензопила',
+                        status: 'completed',
+                        rating: 5,
+                        episodes: 12,
+                        watched_episodes: 12,
+                        duration_per_episode: 24,
+                        total_duration: 288
+                    }
+                ],
+                manga: [
+                    {
+                        id: '2', 
+                        title: 'Берсерк',
+                        status: 'reading',
+                        rating: 5,
+                        chapters: 400,
+                        read_chapters: 347,
+                        volumes: 42,
+                        read_volumes: 12,
+                        pages_per_chapter: 20,
+                        total_pages: 6940
+                    }
+                ]
+            };
+            
+            renderAnimeList();
+            renderMangaList();
+            updateStats();
+        }
+
+        // === СИСТЕМА ВКЛАДОК ===
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Скрываем все вкладки
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Убираем активный класс
+                    document.querySelectorAll('.tab').forEach(t => {
+                        t.classList.remove('active');
+                    });
+                    
+                    // Показываем выбранную вкладку
+                    document.getElementById(`${tabName}-tab`).classList.add('active');
+                    this.classList.add('active');
+                    
+                    if (tabName === 'stats') updateStats();
+                });
+            });
+        }
+
+        // === РЕНДЕРИНГ СПИСКОВ ===
+        function renderAnimeList() {
+            const container = document.getElementById('anime-list');
+            
+            if (userData.anime.length === 0) {
+                container.innerHTML = '<div class="empty-state">🎬<h3>Нет аниме</h3><p>Добавь свое первое аниме!</p></div>';
+                return;
+            }
+            
+            container.innerHTML = userData.anime.map(anime => `
+                <div class="entry-card" onclick="editEntry('anime', '${anime.id}')">
+                    <div class="entry-cover">🖼️ Обложка</div>
+                    <div class="entry-info">
+                        <div class="entry-title">${anime.title}</div>
+                        <div class="entry-status status-${anime.status}">${statusConfig.anime[anime.status]}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">
+                            📺 ${anime.watched_episodes || 0}/${anime.episodes || '?'} эп.
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMangaList() {
+            const container = document.getElementById('manga-list');
+            
+            if (userData.manga.length === 0) {
+                container.innerHTML = '<div class="empty-state">📚<h3>Нет манги</h3><p>Добавь свою первую мангу!</p></div>';
+                return;
+            }
+            
+            container.innerHTML = userData.manga.map(manga => `
+                <div class="entry-card" onclick="editEntry('manga', '${manga.id}')">
+                    <div class="entry-cover">🖼️ Обложка</div>
+                    <div class="entry-info">
+                        <div class="entry-title">${manga.title}</div>
+                        <div class="entry-status status-${manga.status}">${statusConfig.manga[manga.status]}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">
+                            📖 ${manga.read_chapters || 0}/${manga.chapters || '?'} гл.
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // === МОДАЛЬНЫЕ ОКНА ===
+        function setupModal() {
+            changeEntryType('anime'); // Инициализируем для аниме
+        }
+
+        function changeEntryType(type) {
+            const statusSelect = document.getElementById('entry-status');
+            statusSelect.innerHTML = '';
+            
+            const statuses = statusConfig[type];
+            for (const [value, text] of Object.entries(statuses)) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = text;
+                statusSelect.appendChild(option);
+            }
+            
+            // Показываем/скрываем поля
+            document.getElementById('anime-fields').style.display = type === 'anime' ? 'block' : 'none';
+            document.getElementById('manga-fields').style.display = type === 'manga' ? 'block' : 'none';
+        }
+
+        function showAddModal() {
+            document.getElementById('add-modal').style.display = 'block';
+            document.getElementById('add-form').reset();
+        }
+
+        function hideAddModal() {
+            document.getElementById('add-modal').style.display = 'none';
+        }
+
+        function addEntry(event) {
+            event.preventDefault();
+            
+            const type = document.getElementById('entry-type').value;
+            const title = document.getElementById('entry-title').value;
+            const status = document.getElementById('entry-status').value;
+            const rating = parseInt(document.getElementById('entry-rating').value);
+            
+            const newEntry = {
+                id: Date.now().toString(),
+                title,
+                status,
+                rating,
+                added_date: new Date().toISOString()
+            };
+            
+            // Добавляем поля в зависимости от типа
+            if (type === 'anime') {
+                newEntry.episodes = parseInt(document.getElementById('anime-episodes').value) || 0;
+                newEntry.watched_episodes = parseInt(document.getElementById('anime-watched-episodes').value) || 0;
+                newEntry.duration_per_episode = parseInt(document.getElementById('anime-duration').value) || 24;
+                newEntry.total_duration = newEntry.watched_episodes * newEntry.duration_per_episode;
+                userData.anime.push(newEntry);
+                renderAnimeList();
+            } else {
+                newEntry.chapters = parseInt(document.getElementById('manga-chapters').value) || 0;
+                newEntry.read_chapters = parseInt(document.getElementById('manga-read-chapters').value) || 0;
+                newEntry.volumes = parseInt(document.getElementById('manga-volumes').value) || 0;
+                newEntry.pages_per_chapter = 20;
+                newEntry.total_pages = newEntry.read_chapters * newEntry.pages_per_chapter;
+                userData.manga.push(newEntry);
+                renderMangaList();
+            }
+            
+            updateStats();
+            hideAddModal();
+            
+            tg.showPopup({
+                title: 'Успешно!',
+                message: `${type === 'anime' ? 'Аниме' : 'Манга'} "${title}" добавлено!`,
+                buttons: [{ type: 'ok' }]
+            });
+        }
+
+        // === СТАТИСТИКА ===
+        function updateStats() {
+            // Аниме
+            document.getElementById('total-anime').textContent = userData.anime.length;
+            const totalWatchTime = userData.anime.reduce((sum, anime) => sum + (anime.total_duration || 0), 0) / 60;
+            document.getElementById('total-time').textContent = Math.round(totalWatchTime);
+            
+            // Манга
+            document.getElementById('total-manga').textContent = userData.manga.length;
+            const totalPages = userData.manga.reduce((sum, manga) => sum + (manga.total_pages || 0), 0);
+            document.getElementById('total-pages').textContent = totalPages.toLocaleString();
+        }
+
+        // === РЕДАКТИРОВАНИЕ (ЗАГЛУШКА) ===
+        function editEntry(type, id) {
+            tg.showPopup({
+                title: 'Редактирование',
+                message: 'Функция редактирования скоро появится!',
+                buttons: [{ type: 'ok' }]
+            });
+        }
+    </script>
+</body>
+</html>
